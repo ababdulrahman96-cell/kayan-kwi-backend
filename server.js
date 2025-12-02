@@ -5,117 +5,21 @@ import OpenAI from "openai";
 
 dotenv.config();
 
-// ---------- OpenAI client ----------
-const client = new OpenAI({
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "2mb" }));
+
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ---------- Express app ----------
-const app = express();
-app.use(cors());
-app.use(express.json());
+// ==========================
+//  STRICT JSON INSTRUCTIONS
+// ==========================
+const KWI_INSTRUCTIONS = `
+You are Kayan Website Intelligence (KWI), an autonomous SEO, UX, content, and web optimization agent.
 
-// ---------- WordPress config ----------
-const WP_BASE_URL = process.env.WP_BASE_URL;          // e.g. https://kayanrecovery.com
-const WP_USERNAME = process.env.WP_USERNAME;          // e.g. ajamiabdulrahman
-const WP_APP_PASSWORD = process.env.WP_APP_PASSWORD;  // WP application password
-
-// Your important pages
-const AUTO_PAGES = [
-  { id: 195, name: "Homepage" },
-  { id: 197, name: "Articles" },
-  { id: 199, name: "Contact Us" },
-  { id: 201, name: "Gallery" },
-  { id: 203, name: "Who We Are" },
-  { id: 243, name: "License" },
-];
-
-// ---------- Helpers ----------
-function wpAuthHeaders() {
-  const token = Buffer.from(`${WP_USERNAME}:${WP_APP_PASSWORD}`).toString("base64");
-  return {
-    Authorization: `Basic ${token}`,
-    "Content-Type": "application/json",
-  };
-}
-
-async function fetchPageHtml(pageId) {
-  const resp = await fetch(`${WP_BASE_URL}/wp-json/wp/v2/pages/${pageId}`, {
-    headers: {
-      Authorization: wpAuthHeaders().Authorization,
-    },
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`WP READ FAILED for ${pageId}: ${text}`);
-  }
-
-  const json = await resp.json();
-  return json.content?.rendered || "";
-}
-
-async function updatePageHtml(pageId, newHtml) {
-  const resp = await fetch(`${WP_BASE_URL}/wp-json/wp/v2/pages/${pageId}`, {
-    method: "POST",
-    headers: wpAuthHeaders(),
-    body: JSON.stringify({ content: newHtml }),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`WP WRITE FAILED for ${pageId}: ${text}`);
-  }
-
-  return await resp.json();
-}
-
-async function rewriteHtmlWithAI(originalHtml, pageName, language = "ar") {
-  const systemPrompt = `
-You are Kayan Website Intelligence (KWI), an extreme website optimizer for an addiction treatment center.
-
-Rewrite this WordPress PAGE HTML in EXTREME MODE:
-
-- Business: addiction treatment / recovery center.
-- Audience: Egypt, Kuwait, Saudi Arabia.
-- Tone: medically safe, empathetic, professional.
-- Make layout modern, clean, mobile-first, high-conversion.
-- Keep ALL phone numbers visible & clickable.
-- Do NOT remove the clinic phone number.
-- Keep the domain and critical links valid (no broken structure).
-- Use semantic headings (H1, H2, H3) with SEO focus.
-- Make clear CTAs for calling / WhatsApp / contacting.
-- Return ONLY pure HTML (no JSON, no explanations, no comments).
-`;
-
-  const userPrompt = `
-PAGE NAME: ${pageName}
-LANGUAGE: ${language}
-
-CURRENT HTML:
-${originalHtml}
-`;
-
-  const completion = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-  });
-
-  const newHtml = completion.choices[0].message.content || "";
-  return newHtml;
-}
-
-// ---------- 1) KWI analysis endpoint (JSON output) ----------
-app.post("/kwi", async (req, res) => {
-  try {
-    const { message, language = "en" } = req.body;
-
-    const instructions = `
-You are Kayan Website Intelligence (KWI).
-Return ONLY valid JSON with this exact shape:
+ALWAYS respond ONLY as JSON (never text outside JSON). Format:
 
 {
   "answer": "string",
@@ -123,76 +27,107 @@ Return ONLY valid JSON with this exact shape:
   "seo_suggestions": ["string"],
   "ux_suggestions": ["string"],
   "content_changes": [
-    { "page": "string", "change": "string" }
+      { "page": "string", "change": "string" }
   ]
 }
 
-Do not add extra fields, comments, or markdown.
+No explanations. No extra fields. No comments. If unknown, return empty strings or empty arrays.
 `;
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: instructions },
-        {
-          role: "user",
-          content: `Language: ${language}\n\nUser request:\n${message}`,
-        },
-      ],
-    });
+// ==========================
+//  WORDPRESS FETCH HELPERS
+// ==========================
 
-    const raw = completion.choices[0].message.content || "{}";
+const wpBase = process.env.WP_BASE_URL;
+const wpUser = process.env.WP_USERNAME;
+const wpPass = process.env.WP_APP_PASSWORD;
 
-    let json;
-    try {
-      json = JSON.parse(raw);
-    } catch (err) {
-      return res.status(500).json({
-        error: "Model returned non-JSON",
-        raw_output: raw,
-      });
-    }
+async function fetchWPPage(id) {
+  const url = `${wpBase}/wp-json/wp/v2/pages/${id}`;
+  const auth = Buffer.from(`${wpUser}:${wpPass}`).toString("base64");
 
-    res.json(json);
-  } catch (error) {
-    console.error("KWI /kwi ERROR:", error);
-    res.status(500).json({
-      error: "KWI analysis failed",
-      details: error.message,
-    });
-  }
-});
+  const r = await fetch(url, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  return r.json();
+}
 
-// ---------- 2) Single-page EXTREME rewrite endpoint ----------
+async function updateWPPage(id, newContent) {
+  const url = `${wpBase}/wp-json/wp/v2/pages/${id}`;
+  const auth = Buffer.from(`${wpUser}:${wpPass}`).toString("base64");
+
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content: newContent }),
+  });
+
+  return r.json();
+}
+
+// ==========================
+//   EXTREME REWRITE ENDPOINT
+// ==========================
+
 app.post("/kwi/rewrite/:id", async (req, res) => {
   try {
     const pageId = req.params.id;
-    const { language = "ar" } = req.body;
+    const language = req.body.language || "en";
 
-    const pageMeta = AUTO_PAGES.find((p) => String(p.id) === String(pageId)) || {
-      id: pageId,
-      name: `Page ${pageId}`,
-    };
+    console.log(`\n⚡ EXTREME REWRITE TRIGGERED for Page ID ${pageId}`);
 
-    console.log(`🔥 EXTREME rewrite START for ${pageMeta.name} (ID ${pageId})`);
+    const page = await fetchWPPage(pageId);
 
-    const originalHtml = await fetchPageHtml(pageId);
-    console.log(`📄 Loaded content for page ${pageId} (${originalHtml.length} chars)`);
+    const content = page.content?.rendered || "";
+    const title = page.title?.rendered || "Untitled Page";
 
-    const newHtml = await rewriteHtmlWithAI(originalHtml, pageMeta.name, language);
-    console.log(`🤖 New HTML generated for page ${pageId} (${newHtml.length} chars)`);
+    const prompt = `
+Rewrite the following WordPress page content in EXTREME MODE.
+Improve SEO, UX, quality, clarity, and rewrite aggressively.
 
-    const updated = await updatePageHtml(pageId, newHtml);
-    console.log(`✅ WordPress updated for page ${pageId}`);
+Return ONLY JSON as instructed.
+
+Page Title: ${title}
+Language: ${language}
+Content: """${content}"""
+`;
+
+    const completion = await openai.responses.create({
+      model: "gpt-4.1",
+      input: [
+        { role: "system", content: KWI_INSTRUCTIONS },
+        { role: "user", content: prompt }
+      ],
+      format: "json",
+    });
+
+    const raw = completion.output_text;
+    const json = JSON.parse(raw);
+
+    const newContent = `
+<h1>${json.answer}</h1>
+<p><strong>SEO:</strong></p>
+<ul>${json.seo_suggestions.map(s => `<li>${s}</li>`).join("")}</ul>
+
+<p><strong>UX:</strong></p>
+<ul>${json.ux_suggestions.map(s => `<li>${s}</li>`).join("")}</ul>
+    `;
+
+    const updated = await updateWPPage(pageId, newContent);
+
+    console.log(`✔ EXTREME REWRITE COMPLETE for Page ${pageId}`);
 
     res.json({
-      success: true,
-      pageId,
-      pageName: pageMeta.name,
-      link: updated.link,
+      status: "success",
+      updated_page: updated,
+      model_output: json,
     });
+
   } catch (error) {
-    console.error("EXTREME /kwi/rewrite ERROR:", error);
+    console.error("EXTREME ERROR:", error);
     res.status(500).json({
       error: "KWI extreme rewrite failed",
       details: error.message,
@@ -200,55 +135,47 @@ app.post("/kwi/rewrite/:id", async (req, res) => {
   }
 });
 
-// ---------- 3) FULL AUTO-PILOT: rewrite ALL pages in sequence ----------
-async function autoRewriteAllPages(language = "ar") {
-  console.log("🚀 AUTO-PILOT CYCLE STARTED");
-  for (const page of AUTO_PAGES) {
+// ==========================
+//     AUTO-PILOT LOOP
+// ==========================
+
+const PAGES = [
+  process.env.WP_HOMEPAGE_ID,
+  "197",
+  "199",
+  "201",
+  "203",
+  "243"
+];
+
+async function autoPilot() {
+  console.log("\n🤖 AUTO-PILOT CYCLE STARTED");
+
+  for (const id of PAGES) {
     try {
-      console.log(`🔁 Auto-rewriting ${page.name} (ID ${page.id})`);
-      const originalHtml = await fetchPageHtml(page.id);
-      const newHtml = await rewriteHtmlWithAI(originalHtml, page.name, language);
-      await updatePageHtml(page.id, newHtml);
-      console.log(`✅ Auto-rewrite DONE for ${page.name} (ID ${page.id})`);
+      console.log(`\n🔄 Auto-rewriting Page (ID ${id})...`);
+      await fetch(`http://localhost:${process.env.PORT}/kwi/rewrite/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: "ar" }),
+      });
+      console.log(`✔ Finished Page ${id}`);
     } catch (err) {
-      console.error(`❌ Auto-rewrite FAILED for ${page.name} (ID ${page.id}):`, err.message);
+      console.log(`❌ Failed on Page ${id}:`, err.message);
     }
   }
-  console.log("🏁 AUTO-PILOT CYCLE FINISHED");
+
+  console.log("\n⏳ Waiting 10 minutes before next cycle...");
+  setTimeout(autoPilot, 10 * 60 * 1000);
 }
 
-// Manual trigger endpoint (if you want to call from dashboard later)
-app.post("/kwi/auto-rewrite-all", async (req, res) => {
-  const { language = "ar" } = req.body;
-  autoRewriteAllPages(language)
-    .then(() => console.log("✅ Manual auto-rewrite-all finished"))
-    .catch((err) => console.error("❌ Manual auto-rewrite-all error:", err));
-  res.json({ started: true, message: "Auto-rewrite-all started in background" });
+// Start loop
+setTimeout(autoPilot, 5000);
+
+// ==========================
+//       START SERVER
+// ==========================
+
+app.listen(process.env.PORT, "0.0.0.0", () => {
+  console.log(`KWI server running at http://localhost:${process.env.PORT}`);
 });
-
-// ---------- 4) Auto-pilot interval (every 30 minutes) ----------
-const AUTO_INTERVAL_MINUTES = 30;
-
-// run once on startup
-autoRewriteAllPages("ar").catch((err) =>
-  console.error("❌ Startup auto-rewrite error:", err.message)
-);
-
-// then run every 30 minutes
-setInterval(() => {
-  autoRewriteAllPages("ar").catch((err) =>
-    console.error("❌ Scheduled auto-rewrite error:", err.message)
-  );
-}, AUTO_INTERVAL_MINUTES * 60 * 1000);
-
-// ---------- Health check ----------
-app.get("/", (_req, res) => {
-  res.send("KWI backend is running. Auto-pilot is enabled.");
-});
-
-// ---------- Start server ----------
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`KWI server running at http://localhost:${PORT}`);
-});
-
