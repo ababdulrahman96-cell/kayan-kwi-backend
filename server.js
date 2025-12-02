@@ -5,36 +5,117 @@ import OpenAI from "openai";
 
 dotenv.config();
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
+// ---------- OpenAI client ----------
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/**
- * KWI – Kayan Website Intelligence
- *
- * This agent now has 3 big jobs:
- * 1) Deep SEO analysis (Egypt, Kuwait, Saudi Arabia focus)
- * 2) UX / UI review (mobile + desktop)
- * 3) Concrete content changes that can be applied to WordPress
- *
- * It ALWAYS returns the same JSON structure so your dashboard
- * and future “apply changes” tools keep working.
- */
+// ---------- Express app ----------
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-const KWI_INSTRUCTIONS = `
-You are Kayan Website Intelligence (KWI), an advanced SEO, UX, and content optimization agent for an addiction-treatment center.
+// ---------- WordPress config ----------
+const WP_BASE_URL = process.env.WP_BASE_URL;          // e.g. https://kayanrecovery.com
+const WP_USERNAME = process.env.WP_USERNAME;          // e.g. ajamiabdulrahman
+const WP_APP_PASSWORD = process.env.WP_APP_PASSWORD;  // WP application password
 
-Your GOALS:
-- Increase qualified leads from Egypt, Kuwait, and Saudi Arabia.
-- Improve trust, clarity, and professionalism of the website.
-- Make the site fast, usable, and conversion-focused on mobile and desktop.
-- Keep language empathetic, medically safe, and non-judgmental.
+// Your important pages
+const AUTO_PAGES = [
+  { id: 195, name: "Homepage" },
+  { id: 197, name: "Articles" },
+  { id: 199, name: "Contact Us" },
+  { id: 201, name: "Gallery" },
+  { id: 203, name: "Who We Are" },
+  { id: 243, name: "License" },
+];
 
-ALWAYS respond ONLY as strict JSON in this format:
+// ---------- Helpers ----------
+function wpAuthHeaders() {
+  const token = Buffer.from(`${WP_USERNAME}:${WP_APP_PASSWORD}`).toString("base64");
+  return {
+    Authorization: `Basic ${token}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function fetchPageHtml(pageId) {
+  const resp = await fetch(`${WP_BASE_URL}/wp-json/wp/v2/pages/${pageId}`, {
+    headers: {
+      Authorization: wpAuthHeaders().Authorization,
+    },
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`WP READ FAILED for ${pageId}: ${text}`);
+  }
+
+  const json = await resp.json();
+  return json.content?.rendered || "";
+}
+
+async function updatePageHtml(pageId, newHtml) {
+  const resp = await fetch(`${WP_BASE_URL}/wp-json/wp/v2/pages/${pageId}`, {
+    method: "POST",
+    headers: wpAuthHeaders(),
+    body: JSON.stringify({ content: newHtml }),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`WP WRITE FAILED for ${pageId}: ${text}`);
+  }
+
+  return await resp.json();
+}
+
+async function rewriteHtmlWithAI(originalHtml, pageName, language = "ar") {
+  const systemPrompt = `
+You are Kayan Website Intelligence (KWI), an extreme website optimizer for an addiction treatment center.
+
+Rewrite this WordPress PAGE HTML in EXTREME MODE:
+
+- Business: addiction treatment / recovery center.
+- Audience: Egypt, Kuwait, Saudi Arabia.
+- Tone: medically safe, empathetic, professional.
+- Make layout modern, clean, mobile-first, high-conversion.
+- Keep ALL phone numbers visible & clickable.
+- Do NOT remove the clinic phone number.
+- Keep the domain and critical links valid (no broken structure).
+- Use semantic headings (H1, H2, H3) with SEO focus.
+- Make clear CTAs for calling / WhatsApp / contacting.
+- Return ONLY pure HTML (no JSON, no explanations, no comments).
+`;
+
+  const userPrompt = `
+PAGE NAME: ${pageName}
+LANGUAGE: ${language}
+
+CURRENT HTML:
+${originalHtml}
+`;
+
+  const completion = await client.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  });
+
+  const newHtml = completion.choices[0].message.content || "";
+  return newHtml;
+}
+
+// ---------- 1) KWI analysis endpoint (JSON output) ----------
+app.post("/kwi", async (req, res) => {
+  try {
+    const { message, language = "en" } = req.body;
+
+    const instructions = `
+You are Kayan Website Intelligence (KWI).
+Return ONLY valid JSON with this exact shape:
 
 {
   "answer": "string",
@@ -46,101 +127,128 @@ ALWAYS respond ONLY as strict JSON in this format:
   ]
 }
 
-FIELD RULES:
-- answer: A clear summary (1–3 short paragraphs) of your main findings and priorities.
-- language: "en" for English, "ar" for Arabic. Match the user's requested language.
-- seo_suggestions: 5–15 short bullet points. VERY practical. Focus on:
-    - title tags, meta descriptions
-    - H1/H2 structure
-    - internal links
-    - keyword focus for Egypt / Kuwait / Saudi Arabia
-    - schema / structured data
-    - blog / content opportunities
-- ux_suggestions: 5–15 short bullet points. Focus on:
-    - mobile layout, spacing, typography
-    - page speed, image sizes
-    - buttons, CTAs, forms
-    - trust signals (testimonials, certifications, privacy)
-- content_changes: 3–20 items describing SPECIFIC edits someone can make
-    - "page": which page or section (e.g. "Homepage hero", "Admissions page – FAQ section").
-    - "change": the exact wording or layout change. You MAY write full new copy here.
-
-IMPORTANT SAFETY:
-- Do NOT give medical diagnosis or emergency advice.
-- If user asks for medical help, direct them to contact a doctor, emergency services, or trusted hotline.
-- Keep tone compassionate, reassuring, and professional.
-
-TECHNICAL:
-- You may assume the site uses WordPress.
-- When proposing content_changes, think in terms of sections / blocks that an editor can update.
-- Never include explanations outside the JSON. No markdown, no comments, no extra fields.
-- If you are not sure about something, put an empty array [] or empty string "" for that field.
-`;
-
-// --------- MAIN ANALYSIS ENDPOINT ---------
-app.post("/kwi", async (req, res) => {
-  try {
-    const {
-      message,
-      pageUrl,
-      language = "en",
-      mode = "analyze", // future modes: "ideas", "new_page", "ads", etc.
-    } = req.body;
-
-    const userPrompt = `
-MODE: ${mode}
-TARGET COUNTRIES: Egypt, Kuwait, Saudi Arabia
-REQUESTED LANGUAGE: ${language}
-PAGE URL: ${pageUrl || "N/A"}
-
-USER MESSAGE:
-${message}
-
-TASK:
-Do a focused analysis based on the MODE and return JSON only.
-If the mode is "analyze", do a full SEO + UX + content review of the page/website and propose high-impact improvements.
+Do not add extra fields, comments, or markdown.
 `;
 
     const completion = await client.chat.completions.create({
-      model: "gpt-5.1-chat-latest",
+      model: "gpt-4.1-mini",
       messages: [
-        { role: "system", content: KWI_INSTRUCTIONS },
-        { role: "user", content: userPrompt },
+        { role: "system", content: instructions },
+        {
+          role: "user",
+          content: `Language: ${language}\n\nUser request:\n${message}`,
+        },
       ],
-      // New 5.1 models force default temperature; we don't set it.
     });
 
-    const raw = completion.choices[0].message.content;
+    const raw = completion.choices[0].message.content || "{}";
 
     let json;
     try {
       json = JSON.parse(raw);
     } catch (err) {
-      // If model ever returns bad JSON, send it back so we can debug.
       return res.status(500).json({
-        error: "Model returned invalid JSON",
+        error: "Model returned non-JSON",
         raw_output: raw,
       });
     }
 
-    return res.json(json);
+    res.json(json);
   } catch (error) {
-    console.error("KWI ERROR:", error);
-    return res.status(500).json({
-      error: "KWI agent failed",
+    console.error("KWI /kwi ERROR:", error);
+    res.status(500).json({
+      error: "KWI analysis failed",
       details: error.message,
     });
   }
 });
 
-// --------- HEALTH CHECK (useful for Render) ---------
-app.get("/", (_req, res) => {
-  res.send("KWI backend is running.");
+// ---------- 2) Single-page EXTREME rewrite endpoint ----------
+app.post("/kwi/rewrite/:id", async (req, res) => {
+  try {
+    const pageId = req.params.id;
+    const { language = "ar" } = req.body;
+
+    const pageMeta = AUTO_PAGES.find((p) => String(p.id) === String(pageId)) || {
+      id: pageId,
+      name: `Page ${pageId}`,
+    };
+
+    console.log(`🔥 EXTREME rewrite START for ${pageMeta.name} (ID ${pageId})`);
+
+    const originalHtml = await fetchPageHtml(pageId);
+    console.log(`📄 Loaded content for page ${pageId} (${originalHtml.length} chars)`);
+
+    const newHtml = await rewriteHtmlWithAI(originalHtml, pageMeta.name, language);
+    console.log(`🤖 New HTML generated for page ${pageId} (${newHtml.length} chars)`);
+
+    const updated = await updatePageHtml(pageId, newHtml);
+    console.log(`✅ WordPress updated for page ${pageId}`);
+
+    res.json({
+      success: true,
+      pageId,
+      pageName: pageMeta.name,
+      link: updated.link,
+    });
+  } catch (error) {
+    console.error("EXTREME /kwi/rewrite ERROR:", error);
+    res.status(500).json({
+      error: "KWI extreme rewrite failed",
+      details: error.message,
+    });
+  }
 });
 
-// --------- START SERVER (local + Render friendly) ---------
-const PORT = process.env.PORT || 4000;
+// ---------- 3) FULL AUTO-PILOT: rewrite ALL pages in sequence ----------
+async function autoRewriteAllPages(language = "ar") {
+  console.log("🚀 AUTO-PILOT CYCLE STARTED");
+  for (const page of AUTO_PAGES) {
+    try {
+      console.log(`🔁 Auto-rewriting ${page.name} (ID ${page.id})`);
+      const originalHtml = await fetchPageHtml(page.id);
+      const newHtml = await rewriteHtmlWithAI(originalHtml, page.name, language);
+      await updatePageHtml(page.id, newHtml);
+      console.log(`✅ Auto-rewrite DONE for ${page.name} (ID ${page.id})`);
+    } catch (err) {
+      console.error(`❌ Auto-rewrite FAILED for ${page.name} (ID ${page.id}):`, err.message);
+    }
+  }
+  console.log("🏁 AUTO-PILOT CYCLE FINISHED");
+}
 
+// Manual trigger endpoint (if you want to call from dashboard later)
+app.post("/kwi/auto-rewrite-all", async (req, res) => {
+  const { language = "ar" } = req.body;
+  autoRewriteAllPages(language)
+    .then(() => console.log("✅ Manual auto-rewrite-all finished"))
+    .catch((err) => console.error("❌ Manual auto-rewrite-all error:", err));
+  res.json({ started: true, message: "Auto-rewrite-all started in background" });
+});
+
+// ---------- 4) Auto-pilot interval (every 30 minutes) ----------
+const AUTO_INTERVAL_MINUTES = 30;
+
+// run once on startup
+autoRewriteAllPages("ar").catch((err) =>
+  console.error("❌ Startup auto-rewrite error:", err.message)
+);
+
+// then run every 30 minutes
+setInterval(() => {
+  autoRewriteAllPages("ar").catch((err) =>
+    console.error("❌ Scheduled auto-rewrite error:", err.message)
+  );
+}, AUTO_INTERVAL_MINUTES * 60 * 1000);
+
+// ---------- Health check ----------
+app.get("/", (_req, res) => {
+  res.send("KWI backend is running. Auto-pilot is enabled.");
+});
+
+// ---------- Start server ----------
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`KWI server running at http://localhost:${PORT}`);
 });
+
