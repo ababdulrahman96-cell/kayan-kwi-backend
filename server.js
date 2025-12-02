@@ -95,14 +95,14 @@ Language: ${language}
 Content: """${content}"""
 `;
 
-    const completion = await openai.responses.create({
-      model: "gpt-4.1",
-      input: [
-        { role: "system", content: KWI_INSTRUCTIONS },
-        { role: "user", content: prompt }
-      ],
-      format: "json",
-    });
+ const completion = await openai.responses.create({
+  model: "gpt-4.1",
+  input: [
+    { role: "system", content: KWI_INSTRUCTIONS },
+    { role: "user", content: prompt }
+  ],
+  response_format: { type: "json_object" }
+});
 
     const raw = completion.output_text;
     const json = JSON.parse(raw);
