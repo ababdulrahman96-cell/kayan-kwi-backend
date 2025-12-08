@@ -66,25 +66,16 @@ async function updatePageContent(pageId, newHtml) {
 // ---------------------------
 // Rewrite With OpenAI
 // ---------------------------
-async function rewriteContent(originalHTML) {
-  const completion = await client.responses.create({
-    model: process.env.OPENAI_MODEL,
-    input: `
-You are an AI web designer. Rewrite the HTML cleanly and professionally.
-Return ONLY clean HTML. Do not include explanation.
-`,
-    response_format: { type: "text" }, // correct new format
-    temperature: 0.4
-  });
-
-  const outputText = completion.output[0].content[0].text;
-
-  if (!outputText) {
-    throw new Error("AI returned no text");
-  }
-
-  return outputText;
-}
+Log in to your Hostinger account
+In the left menu, click Domains
+Click on the domain horryea1.com
+Scroll down until you find:
+“Transfer domain to another Hostinger user”
+Click it
+Enter my Hostinger email:
+👉 amre0111@gmail.com
+Confirm the transfer when Hostinger asks you
+Once done, please tell me “Transfer completed”
 
 // ---------------------------
 // Auto Pilot
