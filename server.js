@@ -61,7 +61,6 @@ async function updatePageHTML(pageId, newHTML) {
   return await res.json();
 }
 
-// Rewrite via OpenAI
 async function rewriteHTML(originalHTML) {
   const response = await client.responses.create({
     model: OPENAI_MODEL,
@@ -76,10 +75,10 @@ async function rewriteHTML(originalHTML) {
       - Do not wrap inside quotes.
       - Maintain Arabic text direction.
       - Improve spacing, colors, buttons, layout.
-    `,
-    text: {
-      format: "text"   // IMPORTANT — replaces response_format
-    }
+
+      HTML TO REWRITE:
+      ${originalHTML}
+    `
   });
 
   return response.output[0].content[0].text;
