@@ -130,14 +130,14 @@ Current HTML content:
 `;
 
     // 3) Call OpenAI with JSON output (and optional web search)
-    const completion = await openai.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-      instructions: KWI_INSTRUCTIONS,
-      input: extremePrompt,
-      tools: [{ type: "web_search_preview" }], // remove this line if your account doesn't allow web search
-      text: { format: "json" },
-      max_output_tokens: 2048,
-    });
+const completion = await openai.responses.create({
+  model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+  instructions: KWI_INSTRUCTIONS,
+  input: extremePrompt,
+  tools: [{ type: "web_search_preview" }],
+  response_format: { type: "json_object" },
+  max_output_tokens: 2048,
+});
 
     const raw = completion.output_text;
     console.log("🔎 Raw model output_text:", raw);
