@@ -1,111 +1,92 @@
 import express from "express";
-import cors from "cors";
 import fetch from "node-fetch";
-import { OpenAI } from "openai";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1";
+const WP_BASE_URL = process.env.WP_BASE_URL;
+const WP_USERNAME = process.env.WP_USERNAME;
+const WP_APP_PASSWORD = process.env.WP_APP_PASSWORD;
+const WP_HOMEPAGE_ID = process.env.WP_HOMEPAGE_ID;
 
-// ---------------------------
-// Fetch WordPress Page
-// ---------------------------
-async function fetchPageContent(pageId) {
-  const url = `${process.env.WP_BASE_URL}/wp-json/wp/v2/pages/${pageId}`;
-  const auth = Buffer.from(`${process.env.WP_USERNAME}:${process.env.WP_APP_PASSWORD}`).toString("base64");
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json"
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed WP Fetch (${res.status})`);
-  }
-
-  const data = await res.json();
-  return data.content.rendered;
+if (!OPENAI_API_KEY || !WP_BASE_URL) {
+  console.error("❌ Missing environment variables.");
+  process.exit(1);
 }
 
-// ---------------------------
-// Update WordPress Page
-// ---------------------------
-async function updatePageContent(pageId, newHtml) {
-  const url = `${process.env.WP_BASE_URL}/wp-json/wp/v2/pages/${pageId}`;
-  const auth = Buffer.from(`${process.env.WP_USERNAME}:${process.env.WP_APP_PASSWORD}`).toString("base64");
+console.log("🚀 KWI server running...");
 
-  const res = await fetch(url, {
+async function runCycle() {
+  console.log("🔄 AUTO-PILOT STARTED (Homepage Only)");
+  console.log("🎯 Target Page ID:", WP_HOMEPAGE_ID);
+
+  // --- Fetch WordPress HTML ---
+  console.log("📥 Fetching WP HTML...");
+  const wpRes = await fetch(`${WP_BASE_URL}/wp-json/wp/v2/pages/${WP_HOMEPAGE_ID}`);
+  const wpJson = await wpRes.json();
+
+  const originalHTML = wpJson.content.rendered;
+
+  // --- Rewrite using OpenAI ---
+  console.log("✏️ Running AI rewrite...");
+
+  const aiRes = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      content: newHtml
-    })
+      model: OPENAI_MODEL,
+      input: [
+        {
+          role: "system",
+          content:
+            "Rewrite the WordPress HTML to be modern, professional, medical-grade UI/UX. Keep ALL structure valid HTML.",
+        },
+        {
+          role: "user",
+          content: originalHTML,
+        },
+      ],
+      text_format: "html",
+    }),
   });
 
-  if (!res.ok) {
-    const e = await res.text();
-    throw new Error(`Failed WP Update: ${e}`);
+  const aiJson = await aiRes.json();
+
+  if (aiJson.error) {
+    console.error("❌ AI ERROR:", aiJson.error);
+    return;
   }
 
-  return await res.json();
+  const newHTML = aiJson.output[0].content[0].text;
+
+  // --- Send Update to WordPress ---
+  console.log("💾 Updating WordPress...");
+
+  await fetch(`${WP_BASE_URL}/wp-json/wp/v2/pages/${WP_HOMEPAGE_ID}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization:
+        "Basic " + Buffer.from(`${WP_USERNAME}:${WP_APP_PASSWORD}`).toString("base64"),
+    },
+    body: JSON.stringify({
+      content: newHTML,
+    }),
+  });
+
+  console.log("✅ Homepage updated successfully!");
 }
 
-// ---------------------------
-// Rewrite With OpenAI
-// ---------------------------
-Log in to your Hostinger account
-In the left menu, click Domains
-Click on the domain horryea1.com
-Scroll down until you find:
-“Transfer domain to another Hostinger user”
-Click it
-Enter my Hostinger email:
-👉 amre0111@gmail.com
-Confirm the transfer when Hostinger asks you
-Once done, please tell me “Transfer completed”
+// Run every 10 min
+setInterval(runCycle, 10 * 60 * 1000);
 
-// ---------------------------
-// Auto Pilot
-// ---------------------------
-async function autoPilot() {
-  try {
-    console.log("🚀 AUTO-PILOT STARTED");
-
-    const pageId = process.env.WP_HOMEPAGE_ID;
-    console.log("➡️ Target Page ID:", pageId);
-
-    const original = await fetchPageContent(pageId);
-    console.log("📥 Fetched WP HTML");
-
-    const rewritten = await rewriteContent(original);
-    console.log("✍️ AI Rewrite Completed");
-
-    await updatePageContent(pageId, rewritten);
-    console.log("✅ WordPress Page Updated");
-
-  } catch (err) {
-    console.error("❌ AUTO-PILOT ERROR:", err.message);
-  }
-
-  console.log("⏳ Waiting 10 minutes before next cycle...");
-  setTimeout(autoPilot, 10 * 60 * 1000);
-}
-
-// Start server & autopilot
-app.listen(process.env.PORT || 4000, () => {
-  console.log("Server running...");
-  autoPilot();
+app.get("/", (req, res) => {
+  res.send("KWI Agent backend running.");
 });
+
+app.listen(4000, () => console.log("🌍 Server live on 4000"));
