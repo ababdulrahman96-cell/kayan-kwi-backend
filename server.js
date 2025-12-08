@@ -129,27 +129,34 @@ Current HTML content:
 """${content}"""
 `;
 
-    // 3) Call OpenAI with JSON output (and optional web search)
+// 3) Call OpenAI with JSON output
 const completion = await openai.responses.create({
   model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
   instructions: KWI_INSTRUCTIONS,
   input: extremePrompt,
-  tools: [{ type: "web_search_preview" }],
-  response_format: { type: "json_object" },
-  max_output_tokens: 2048,
+  tools: [{ type: "web_search" }], // remove if your account doesn't support web search
+  output: { format: "json" },
+  max_output_tokens: 4096
 });
 
-    const raw = completion.output_text;
-    console.log("🔎 Raw model output_text:", raw);
+// Extract JSON string from new Responses API output structure
+let raw;
+try {
+  raw = completion.output[0].content[0].text;
+} catch (e) {
+  console.error("❌ Could not extract text from response:", e);
+  throw new Error("Invalid response format from OpenAI");
+}
 
-    let json;
-    try {
-      json = JSON.parse(raw);
-    } catch (parseErr) {
-      console.error("❌ Failed to parse model JSON:", parseErr);
-      throw new Error("Model did not return valid JSON.");
-    }
+console.log("🔎 Model JSON raw:", raw);
 
+let json;
+try {
+  json = JSON.parse(raw);
+} catch (parseErr) {
+  console.error("❌ Failed to parse model JSON:", parseErr);
+  throw new Error("Model did not return valid JSON.");
+}
     // 4) Update page content in WP
     const newContent =
       json.page_html && json.page_html.trim().length > 0
