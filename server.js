@@ -14,33 +14,52 @@ const openai = new OpenAI({
 });
 
 // ==========================
-//  STRICT JSON INSTRUCTIONS
+//  KWI CORE INSTRUCTIONS
 // ==========================
 const KWI_INSTRUCTIONS = `
-You are Kayan Website Intelligence (KWI), an autonomous SEO, UX, content, and web optimization agent.
+You are Kayan Website Intelligence (KWI), an autonomous agent that manages a WordPress site
+for a medical drug-addiction recovery center (Kayan Recovery Center in Egypt).
 
-ALWAYS respond ONLY as JSON (never text outside JSON). Format:
+You specialize in:
+- Modern, professional medical UI/UX
+- SEO for addiction treatment & rehab keywords
+- Conversion-focused content (trust, safety, contact/WhatsApp/call)
+- Arabic and English content
+
+You ONLY control the HTML content of individual WordPress pages for now (no theme PHP editing yet).
+Focus on layout, hierarchy, sections, clarity, and conversion.
+
+You MUST always return ONE JSON object in EXACTLY this shape:
 
 {
-  "answer": "string",
-  "language": "en or ar",
-  "seo_suggestions": ["string"],
-  "ux_suggestions": ["string"],
-  "content_changes": [
-      { "page": "string", "change": "string" }
-  ]
+  "page_html": "string, full HTML for the WordPress page content",
+  "seo": {
+    "title": "string",
+    "description": "string",
+    "keywords": ["string"]
+  },
+  "language": "ar or en"
 }
 
-No explanations. No extra fields. No comments. If unknown, return empty strings or empty arrays.
+Hard rules:
+- No extra top-level fields.
+- No comments.
+- No Markdown.
+- If unsure about a value, use "" or [].
+- "page_html" must be valid HTML that can be stored into WordPress page.content.
 `;
-
-// ==========================
-//  WORDPRESS FETCH HELPERS
-// ==========================
 
 const wpBase = process.env.WP_BASE_URL;
 const wpUser = process.env.WP_USERNAME;
 const wpPass = process.env.WP_APP_PASSWORD;
+
+if (!wpBase || !wpUser || !wpPass) {
+  console.warn("⚠ Missing WP_BASE_URL / WP_USERNAME / WP_APP_PASSWORD env vars.");
+}
+
+// ==========================
+//  WORDPRESS HELPERS
+// ==========================
 
 async function fetchWPPage(id) {
   const url = `${wpBase}/wp-json/wp/v2/pages/${id}`;
@@ -49,6 +68,12 @@ async function fetchWPPage(id) {
   const r = await fetch(url, {
     headers: { Authorization: `Basic ${auth}` },
   });
+
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(`WP fetch failed (${r.status}): ${body}`);
+  }
+
   return r.json();
 }
 
@@ -65,11 +90,16 @@ async function updateWPPage(id, newContent) {
     body: JSON.stringify({ content: newContent }),
   });
 
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(`WP update failed (${r.status}): ${body}`);
+  }
+
   return r.json();
 }
 
 // ==========================
-//   EXTREME REWRITE ENDPOINT
+//   EXTREME REWRITE ROUTE
 // ==========================
 
 app.post("/kwi/rewrite/:id", async (req, res) => {
@@ -79,50 +109,61 @@ app.post("/kwi/rewrite/:id", async (req, res) => {
 
     console.log(`\n⚡ EXTREME REWRITE TRIGGERED for Page ID ${pageId}`);
 
+    // 1) Fetch current page
     const page = await fetchWPPage(pageId);
-
     const content = page.content?.rendered || "";
     const title = page.title?.rendered || "Untitled Page";
+    const slug = page.slug || "";
 
-    const prompt = `
-Rewrite the following WordPress page content in EXTREME MODE.
-Improve SEO, UX, quality, clarity, and rewrite aggressively.
+    // 2) Build prompt with context
+    const extremePrompt = `
+Site niche: medical drug addiction and rehab center in Egypt (Kayan Recovery Center).
+Target: people and families searching online for help.
 
-Return ONLY JSON as instructed.
+Page ID: ${pageId}
+Page slug: ${slug}
+Page title: ${title}
+Preferred language: ${language}
 
-Page Title: ${title}
-Language: ${language}
-Content: """${content}"""
+Current HTML content:
+"""${content}"""
 `;
 
-const completion = await openai.responses.create({
-  model: "gpt-4.1",
-  input: extremePrompt,
-  text: { format: "json" }   // ⭐ FIXED
-});
+    // 3) Call OpenAI with JSON output (and optional web search)
+    const completion = await openai.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+      instructions: KWI_INSTRUCTIONS,
+      input: extremePrompt,
+      tools: [{ type: "web_search_preview" }], // remove this line if your account doesn't allow web search
+      text: { format: "json" },
+      max_output_tokens: 2048,
+    });
 
     const raw = completion.output_text;
-    const json = JSON.parse(raw);
+    console.log("🔎 Raw model output_text:", raw);
 
-    const newContent = `
-<h1>${json.answer}</h1>
-<p><strong>SEO:</strong></p>
-<ul>${json.seo_suggestions.map(s => `<li>${s}</li>`).join("")}</ul>
+    let json;
+    try {
+      json = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error("❌ Failed to parse model JSON:", parseErr);
+      throw new Error("Model did not return valid JSON.");
+    }
 
-<p><strong>UX:</strong></p>
-<ul>${json.ux_suggestions.map(s => `<li>${s}</li>`).join("")}</ul>
-    `;
+    // 4) Update page content in WP
+    const newContent =
+      json.page_html && json.page_html.trim().length > 0
+        ? json.page_html
+        : content;
 
-    const updated = await updateWPPage(pageId, newContent);
-
+    const updatedPage = await updateWPPage(pageId, newContent);
     console.log(`✔ EXTREME REWRITE COMPLETE for Page ${pageId}`);
 
     res.json({
       status: "success",
-      updated_page: updated,
+      updated_page: updatedPage,
       model_output: json,
     });
-
   } catch (error) {
     console.error("EXTREME ERROR:", error);
     res.status(500).json({
@@ -136,37 +177,29 @@ const completion = await openai.responses.create({
 //     AUTO-PILOT LOOP
 // ==========================
 
-const PAGES = [
-  process.env.WP_HOMEPAGE_ID,
-  "197",
-  "199",
-  "201",
-  "203",
-  "243"
-];
+// Guided mode: only homepage for now
+const HOMEPAGE_ID = process.env.WP_HOMEPAGE_ID || "195";
 
 async function autoPilot() {
-  console.log("\n🤖 AUTO-PILOT CYCLE STARTED");
+  console.log("\n🤖 AUTO-PILOT CYCLE STARTED (GUIDED MODE: HOMEPAGE ONLY)");
 
-  for (const id of PAGES) {
-    try {
-      console.log(`\n🔄 Auto-rewriting Page (ID ${id})...`);
-      await fetch(`http://localhost:${process.env.PORT}/kwi/rewrite/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: "ar" }),
-      });
-      console.log(`✔ Finished Page ${id}`);
-    } catch (err) {
-      console.log(`❌ Failed on Page ${id}:`, err.message);
-    }
+  try {
+    console.log(`\n🔄 Auto-rewriting Homepage (ID ${HOMEPAGE_ID})...`);
+    await fetch(`http://localhost:${process.env.PORT}/kwi/rewrite/${HOMEPAGE_ID}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: "ar" }), // change to "en" if you prefer English
+    });
+    console.log(`✔ Finished Homepage ${HOMEPAGE_ID}`);
+  } catch (err) {
+    console.log(`❌ Failed on Homepage ${HOMEPAGE_ID}:`, err.message);
   }
 
   console.log("\n⏳ Waiting 10 minutes before next cycle...");
   setTimeout(autoPilot, 10 * 60 * 1000);
 }
 
-// Start loop
+// Start loop a few seconds after boot
 setTimeout(autoPilot, 5000);
 
 // ==========================
