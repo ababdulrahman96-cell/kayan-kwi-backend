@@ -105,8 +105,6 @@ async function autopilot() {
   }
 }
 
-// Run every 10 minutes
-setInterval(autopilot, 10 * 60 * 1000);
 
 // -------------------------------
 // MANUAL TRIGGER ENDPOINT
@@ -137,4 +135,9 @@ app.get("/", (req, res) => {
 // -------------------------------
 app.listen(4000, () => {
   console.log("🌐 Server live on 4000");
+
+  // Start autopilot safely AFTER server is ready
+  console.log("⏳ Autopilot timer initialized");
+  setInterval(autopilot, 10 * 60 * 1000); 
 });
+
