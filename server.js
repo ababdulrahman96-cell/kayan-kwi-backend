@@ -27,6 +27,134 @@ const auth = Buffer.from(`${WP_USERNAME}:${WP_APP_PASSWORD}`).toString("base64")
 const client = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // -------------------------------
+// BRAND-LOCKED CSS (NO AI)
+// -------------------------------
+const KAYAN_BRAND_CSS = `
+/* ---------------------------
+GLOBAL RESET / BRAND SYSTEM
+----------------------------*/
+body {
+  background: #ffffff !important;
+  direction: rtl;
+  font-family: "Tahoma", "Arial", sans-serif;
+  color: #1d2d35;
+  line-height: 1.8;
+}
+
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+/* Kayan Brand Colors */
+:root {
+  --kayan-blue: #004e62;
+  --kayan-blue-light: #e7f2f4;
+  --kayan-text: #1d2d35;
+  --kayan-white: #ffffff;
+}
+
+/* ---------------------------
+HEADINGS
+----------------------------*/
+h1, h2, h3, h4 {
+  color: var(--kayan-blue);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+p {
+  margin-bottom: 16px;
+  color: var(--kayan-text);
+  font-size: 1.1rem;
+}
+
+/* ---------------------------
+HERO LAYOUT
+----------------------------*/
+.hero {
+  background: var(--kayan-white) !important;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  margin-bottom: 20px;
+  color: var(--kayan-blue);
+}
+
+.hero .subline {
+  font-size: 1.1rem;
+  color: var(--kayan-text);
+  margin-bottom: 30px;
+}
+
+/* ---------------------------
+BUTTONS
+----------------------------*/
+.kwi-btn-primary {
+  background: var(--kayan-blue);
+  color: #ffffff !important;
+  padding: 14px 28px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1.1rem;
+  display: inline-block;
+  margin: 10px;
+}
+
+.kwi-btn-primary:hover {
+  background: #003947;
+}
+
+.kwi-btn-secondary {
+  background: var(--kayan-white);
+  color: var(--kayan-blue) !important;
+  border: 2px solid var(--kayan-blue);
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  display: inline-block;
+  margin: 10px;
+}
+
+.kwi-btn-secondary:hover {
+  background: var(--kayan-blue-light);
+}
+
+/* ---------------------------
+SECTIONS
+----------------------------*/
+section {
+  padding: 60px 20px;
+  background: var(--kayan-white) !important;
+}
+
+section:nth-of-type(even) {
+  background: var(--kayan-blue-light) !important;
+}
+
+.kwi-card {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid #d8e4e6;
+  margin-bottom: 30px;
+}
+
+/* ---------------------------
+RTL CLEANUPS
+----------------------------*/
+ul, ol {
+  padding-right: 20px;
+}
+
+.hero * {
+  text-align: center !important;
+}
+`;
+
+// -------------------------------
 // WORDPRESS HELPERS
 // -------------------------------
 async function fetchPageHTML(pageId) {
@@ -61,7 +189,6 @@ async function updatePageHTML(pageId, newHTML) {
   return res.json();
 }
 
-// Push CSS to WP
 async function updateThemeCSS(css) {
   const url = `${WP_BASE_URL}/wp-json/kwi-agent/v1/css`;
   const res = await fetch(url, {
@@ -79,7 +206,6 @@ async function updateThemeCSS(css) {
   return res.json();
 }
 
-// Create blog post
 async function createWPPost(title, html) {
   const url = `${WP_BASE_URL}/wp-json/wp/v2/posts`;
   const res = await fetch(url, {
@@ -102,33 +228,60 @@ async function createWPPost(title, html) {
 }
 
 // -------------------------------
-// AI: HTML Rewriter
+// AI HELPERS
 // -------------------------------
 async function rewriteHTML(originalHTML) {
   const prompt = `
-You are KWI Agent, an autonomous medical website architect for Kayan Recovery Center in Egypt.
+You are KWI Agent, an autonomous medical website architect and clinical content specialist
+for Kayan Recovery Center in Egypt.
 
-Rewrite the homepage content using:
-- Formal Arabic (RTL)
-- Clinical credibility
-- SEO keywords: علاج الإدمان، علاج الادمان، علاج المخدرات
-- Hero Version C (locked)
+This is a REAL addiction recovery and mental health website.
+Your output must be PROFESSIONAL, FORMAL, TRUST-BUILDING, and medically ethical.
 
-Arabic headline:
+================================
+HERO SECTION (VERSION C – LOCKED)
+================================
+Arabic headline (H1):
 "رعاية طبية متخصصة لعلاج الإدمان والصحة النفسية"
-English subline:
+
+English subline (smaller text):
 "Specialized, evidence-based addiction & mental health care."
-CTAs:
-"ابدأ رحلتك العلاجية"
-"تحدث مع مستشار متخصص"
 
-Rules:
-- Clean semantic HTML
-- No dev text
-- No placeholders
-- No editing header/footer
+Two CTAs (buttons/links):
+- "ابدأ رحلتك العلاجية"
+- "تحدث مع مستشار متخصص"
 
-Rewrite this HTML:\n${originalHTML}
+================================
+SEO TARGETING (IMPORTANT)
+================================
+Naturally and safely integrate:
+- علاج الإدمان
+- علاج الادمان
+- علاج المخدرات
+
+Do NOT keyword-stuff. Keep language natural and respectful.
+
+================================
+STRUCTURE
+================================
+- Arabic-first, RTL-friendly content.
+- Clear sections using <section> with logical headings.
+- Clinical but compassionate tone.
+- No fake statistics, no made-up names.
+- No developer text, no placeholders.
+
+================================
+OUTPUT RULES (STRICT)
+================================
+- OUTPUT PURE HTML ONLY.
+- Do NOT wrap in backticks.
+- Do NOT start or end with the word "html" or "```".
+- No markdown, no JSON, no comments.
+- Do NOT touch global header or footer.
+
+Rewrite the following HTML accordingly:
+
+${originalHTML}
 `;
 
   const response = await client.responses.create({
@@ -139,32 +292,15 @@ Rewrite this HTML:\n${originalHTML}
   return response.output[0].content[0].text;
 }
 
-// -------------------------------
-// AI: CSS Generator
-// -------------------------------
-async function designCSSFromHTML(sampleHTML) {
-  const prompt = `
-You are a senior medical UI/UX designer. Generate global CSS only.
-
-${sampleHTML}
-`;
-
-  const res = await client.responses.create({
-    model: OPENAI_MODEL,
-    input: prompt,
-  });
-
-  return res.output[0].content[0].text.trim();
-}
-
-// -------------------------------
-// AI: SEO Brief Generator
-// -------------------------------
 async function seoBrief(keyword) {
   const prompt = `
-Create a full Arabic SEO brief for: ${keyword}
-Include: H1, H2, H3, keyphrases, and FAQ ideas.
-Arabic only.
+أنشئ مخطط سيو عربي كامل للكلمة المفتاحية: "${keyword}"
+يتضمن:
+- عنوان H1 مقترح
+- عناوين H2 و H3
+- الكلمات والعبارات المرتبطة
+- أفكار لأسئلة شائعة (FAQ)
+اللغة عربية فقط وبأسلوب طبي مهني وطمأنة.
 `;
 
   const response = await client.responses.create({
@@ -175,26 +311,29 @@ Arabic only.
   return response.output[0].content[0].text;
 }
 
-// -------------------------------
-// AI Article Creator
-// -------------------------------
 async function generateArticle(title, keyword) {
   const prompt = `
-Write a medically-safe Arabic HTML article.
-Title: ${title}
-Keyword: ${keyword}
-Output: HTML only.
+اكتب مقالة عربية كاملة بصيغة HTML عن موضوع:
+العنوان: "${title}"
+الكلمة المستهدفة: "${keyword}"
+
+القواعد:
+- أسلوب طبي مهني وبلغة سهلة.
+- لا وعود شفاء نهائية، لا مبالغة.
+- استخدم عناوين H2 و H3 داخل المقال.
+- أضف فقرة ختامية تشجع على طلب المساعدة من مركز كيان.
+- المخرج HTML فقط بدون أي شيفرات أخرى.
 `;
+
   const response = await client.responses.create({
     model: OPENAI_MODEL,
     input: prompt,
   });
+
   return response.output[0].content[0].text;
 }
 
-// -------------------------------
-// SERPER Competitor Analyzer
-// -------------------------------
+// SERPER competitor analysis
 async function analyzeCompetitors(keyword) {
   const url = "https://google.serper.dev/search";
 
@@ -216,13 +355,9 @@ async function analyzeCompetitors(keyword) {
     throw new Error(`Serper error: ${res.status} ${t}`);
   }
 
-  const data = await res.json();
-  return data;
+  return res.json();
 }
 
-// -------------------------------
-// SEO AUTOPILOT (every 2 days)
-// -------------------------------
 async function seoAutopilot() {
   try {
     console.log("🚀 SEO AUTOPILOT STARTED");
@@ -234,12 +369,13 @@ async function seoAutopilot() {
       const serp = await analyzeCompetitors(k);
 
       const prompt = `
-Analyze this SERP for "${k}" and produce recommendations to outrank top competitors.
+حلل بيانات نتائج البحث التالية للكلمة: "${k}"
+واقترح تحسينات واضحة لمحتوى موقع "مركز كيان" حتى ينافس أفضل الصفحات.
 
-SERP DATA:
+بيانات SERP:
 ${JSON.stringify(serp)}
 
-Arabic SEO recommendations only.
+اكتب التوصيات بالعربية فقط على شكل نقاط وعناوين.
 `;
 
       const response = await client.responses.create({
@@ -257,10 +393,24 @@ Arabic SEO recommendations only.
   }
 }
 
+// Homepage rewrite autopilot
+async function homepageAutopilot() {
+  try {
+    console.log("🚀 HOMEPAGE AUTOPILOT STARTED");
+    const html = await fetchPageHTML(WP_HOMEPAGE_ID);
+    const rewritten = await rewriteHTML(html);
+    await updatePageHTML(WP_HOMEPAGE_ID, rewritten);
+    console.log("✅ HOMEPAGE AUTOPILOT DONE");
+  } catch (err) {
+    console.error("❌ HOMEPAGE AUTOPILOT ERROR:", err.message);
+  }
+}
+
 // -------------------------------
 // ROUTES
 // -------------------------------
 
+// Rewrite homepage
 app.get("/rewrite-now", async (req, res) => {
   try {
     const html = await fetchPageHTML(WP_HOMEPAGE_ID);
@@ -272,6 +422,7 @@ app.get("/rewrite-now", async (req, res) => {
   }
 });
 
+// Rewrite all pages
 app.get("/rewrite-all", async (req, res) => {
   try {
     const pages = await fetchAllPages();
@@ -282,7 +433,7 @@ app.get("/rewrite-all", async (req, res) => {
         const html = await fetchPageHTML(p.id);
         const rewritten = await rewriteHTML(html);
         await updatePageHTML(p.id, rewritten);
-        updated.push(p.title.rendered);
+        updated.push({ id: p.id, title: p.title.rendered });
       } catch (err) {
         console.log("Page failed:", p.id, err.message);
       }
@@ -294,10 +445,10 @@ app.get("/rewrite-all", async (req, res) => {
   }
 });
 
+// Push brand CSS (no AI)
 app.get("/design-css-now", async (req, res) => {
   try {
-    const html = await fetchPageHTML(WP_HOMEPAGE_ID);
-    const css = await designCSSFromHTML(html);
+    const css = KAYAN_BRAND_CSS.trim();
     const bridge = await updateThemeCSS(css);
     res.json({ cssLength: css.length, bridge });
   } catch (err) {
@@ -305,41 +456,41 @@ app.get("/design-css-now", async (req, res) => {
   }
 });
 
-// SEO BRIEF
+// SEO brief
 app.post("/seo-brief", async (req, res) => {
   try {
-    const brief = await seoBrief(req.body.keyword);
+    const { keyword } = req.body;
+    const brief = await seoBrief(keyword);
     res.json({ brief });
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-// Generate & Publish Article
+// Generate & publish article
 app.post("/publish-article", async (req, res) => {
   try {
     const { title, keyword } = req.body;
-
     const html = await generateArticle(title, keyword);
     const post = await createWPPost(title, html);
-
-    res.json({ published: post.id });
+    res.json({ publishedId: post.id });
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-// Competitor Analyzer
+// Competitor analyzer
 app.post("/competitor-analyze", async (req, res) => {
   try {
-    const data = await analyzeCompetitors(req.body.keyword);
+    const { keyword } = req.body;
+    const data = await analyzeCompetitors(keyword);
     res.json(data);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-// SEO autopilot route
+// Manual SEO autopilot trigger
 app.get("/seo-autopilot", async (req, res) => {
   try {
     const report = await seoAutopilot();
@@ -349,7 +500,10 @@ app.get("/seo-autopilot", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => res.send("KWI Backend Running ✓"));
+// Health check
+app.get("/", (req, res) => {
+  res.send("KWI Backend Running ✓");
+});
 
 // -------------------------------
 // START SERVER
@@ -357,6 +511,10 @@ app.get("/", (req, res) => res.send("KWI Backend Running ✓"));
 app.listen(4000, () => {
   console.log("🌐 Server live on 4000");
 
-  // Run autopilot every 2 days
-  setInterval(seoAutopilot, 2 * 24 * 60 * 60 * 1000);
+  // Every 2 days: homepage rewrite + SEO analysis
+  const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+  setInterval(() => {
+    homepageAutopilot();
+    seoAutopilot();
+  }, TWO_DAYS);
 });
