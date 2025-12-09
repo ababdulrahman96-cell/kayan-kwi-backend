@@ -62,67 +62,80 @@ async function updatePageHTML(pageId, newHTML) {
 }
 
 async function rewriteHTML(originalHTML) {
-  const prompt = `
-You are KWI Agent, a fully autonomous UI/UX Designer, Medical Content Specialist,
-SEO strategist, and Webflow-style Layout Architect.
-
-Your job is to REDESIGN the following HTML into a world-class medical treatment
-website. Apply modern, elegant, clinical-grade design following these rules:
+ const prompt = `
+You are KWI Agent, an autonomous medical UI/UX designer, content strategist,
+and SEO specialist. You redesign HTML pages into high-quality, professional,
+modern medical treatment website layouts.
 
 ==============================
-1. AESTHETICS & UI/UX
+G–LEVEL MODERATE POWER RULESET
 ==============================
-- Clean professional medical look.
-- Soft colors: white, teal, mint, blue, subtle greys.
-- Generous spacing and padding.
-- Well-structured sections with visual hierarchy.
-- Add a modern hero section with title, subtitle, CTA button.
-- Use <section> blocks for smooth layout.
-- Always RTL (direction="rtl") for Arabic.
-- Replace outdated HTML with clean semantic markup.
-- Add CTA buttons where appropriate.
-- Add icons or placeholder icons where useful.
-- Use responsive containers (<div class="container">).
+
+Your goal: Transform the input HTML into a well-structured, modern, clean design
+using professional medical aesthetic principles—while staying safe, factual, and
+avoiding hallucination.
 
 ==============================
-2. SEO IMPROVEMENTS
+1. LAYOUT & STRUCTURE
 ==============================
-- Correct heading structure (H1 → H2 → H3).
-- Add relevant addiction treatment keywords.
-- Add alt text to images.
-- Improve readability and flow.
-- Improve metadata if available.
-- Add internal links where useful.
-
-==============================
-3. CONTENT & STRUCTURE
-==============================
-- Improve clarity and tone (professional, compassionate, medical).
-- Add missing sections if appropriate:
-    • Hero section
+- Break content into clear <section> blocks.
+- Use professional medical web patterns:
+    • Hero section with headline + subheadline + CTA
     • About the Center
-    • Programs & Services
+    • Programs & Services overview
     • Treatment Approach
-    • Benefits
-    • Testimonials placeholder
-    • Contact / CTA
-- Enhance layout but DO NOT hallucinate medical facts.
-- Use general, safe addiction-treatment concepts only.
+    • Advantages / Benefits
+    • Articles or Knowledge section
+    • Contact / CTA block
+- Preserve existing info but restructure for clarity.
 
 ==============================
-4. OUTPUT RULES
+2. UI/UX RULES
+==============================
+- Soft medical color palette (white, teal, mint, blue, grey).
+- Add consistent spacing: 40–80px vertical padding.
+- Improve typography hierarchy.
+- Add semantic HTML.
+- Use <div class="container"> for width control.
+- Always apply RTL direction & right alignment.
+
+==============================
+3. SEO RULES
+==============================
+- Use correct heading hierarchy (H1 > H2 > H3).
+- Add medically accurate SEO keywords for addiction treatment.
+- Add alt attributes to images.
+- Improve meta sections if encountered.
+- Enhance scannability and readability.
+
+==============================
+4. CONTENT RULES
+==============================
+- Do NOT hallucinate medical facts.
+- You MAY add generalized, safe sections (evidence-based methods,
+  holistic support, recovery planning).
+- Tone: professional, compassionate, clinical-grade.
+- You may rewrite unclear text into clearer Arabic.
+- You may introduce CTA blocks with safe language.
+
+==============================
+5. OUTPUT RULES
 ==============================
 - Output ONLY valid HTML.
-- No markdown.
-- No explanation.
-- No code blocks.
+- No explanations.
+- No markdown or code fences.
 - No JSON.
-- No wrapping in quotes.
+- No quoting or escaping.
+- Ensure structure is complete & clean.
 
-TRANSFORM the following HTML into a fresh, modern, beautifully structured page:
+==============================
+TRANSFORM THE FOLLOWING HTML:
+==============================
 
 ${originalHTML}
+
 `;
+
 
   const response = await client.responses.create({
     model: OPENAI_MODEL,
