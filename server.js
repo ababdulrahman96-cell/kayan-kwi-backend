@@ -200,52 +200,107 @@ ${originalHTML}
 
 // Design CSS from sample HTML
 async function designCSSFromHTML(sampleHTML) {
-  const prompt = `
-You are a senior UI/UX designer and frontend engineer.
-You design modern, medical-grade, conversion-focused layouts using ONLY CSS.
+ const prompt = `
+You are a senior UI/UX designer and frontend engineer specializing in
+rehabilitation, mental health, and medical recovery websites.
 
-Context:
-- Website: Kayan Recovery (addiction recovery & mental health, Egypt).
-- Audience: Arabic + English users; site must look trustworthy, calm, and professional.
-- Theme: Twenty Twenty-Five (block theme), minimal default styling.
-- CSS will be saved as /wp-content/themes/<active-theme>/kwi-agent.css and enqueued globally.
+Your task:
+Generate a COMPLETE, modern CSS design system that transforms the site into
+a WARM, SUPPORTIVE, HOPE-ORIENTED rehabilitation center website.
+This is NOT a corporate hospital. This is a place of healing and recovery.
 
-Design requirements:
-- Use a soft, medical palette:
-  - Whites, off-whites
-  - Teal, turquoise, and mint accents
-  - Soft medical blues
-  - Subtle greys for text and borders
-- Make the homepage feel like a serious, modern medical rehab center:
-  - Clean hero section with big headline, subhead, and primary CTA button.
-  - Secondary CTA for WhatsApp / phone.
-  - Card-based sections for services, programs, testimonials, team, and FAQs.
-  - Good spacing, strong visual hierarchy, rounded cards, and subtle shadows.
-- Typography & RTL:
-  - Support both LTR and RTL.
-  - Use body[dir="rtl"] and .rtl helpers for RTL adjustments.
-  - Ensure headings, paragraphs, lists, and buttons look good in Arabic and English.
-- Layout:
-  - Responsive (mobile-first, then tablet and desktop breakpoints).
-  - Max-width container for content (e.g. .kwi-container).
-  - Utility classes for spacing (e.g. .kwi-section, .kwi-grid, .kwi-card).
-- Accessibility:
-  - Good contrast ratios.
-  - Focus styles for buttons and links.
-  - Avoid tiny text.
+================================================
+DESIGN TONE (VERY IMPORTANT)
+================================================
+- Emotional tone: warm, calm, supportive, reassuring.
+- The site must feel SAFE, HUMAN, and COMPASSIONATE.
+- Avoid harsh contrasts or aggressive marketing visuals.
+- Think: trust, care, recovery, dignity, professionalism.
 
-IMPORTANT:
-- OUTPUT ONLY VALID CSS. NO explanations, NO comments, NO HTML, NO JSON.
-- Do not reference external fonts; assume theme fonts.
-- Prefer utility/helper classes that can be reused across different blocks.
+================================================
+COLOR & VISUAL LANGUAGE
+================================================
+- Primary palette:
+  • Soft medical teal
+  • Muted blues
+  • Gentle mint accents
+  • Warm off-white backgrounds
+- Avoid black-heavy or cold corporate looks.
+- Use subtle gradients (very soft) where appropriate.
+- Borders, cards, and sections should feel light and breathable.
 
-You will receive a sample of the current homepage HTML.
-Analyse common patterns, class names, and structure, then output a complete CSS file 
-that transforms the site into a modern, medical-grade layout as described.
+================================================
+HERO SECTION (CRITICAL — MUST DOMINATE VISUALLY)
+================================================
+Force the FIRST major section / page intro / hero to:
+- Have noticeably larger vertical spacing.
+- Use larger heading sizes than the rest of the site.
+- Use a calming background (soft gradient or light solid).
+- Feel emotionally welcoming, not technical.
+- Center or right-align content depending on RTL.
 
-Again: output ONLY raw CSS, with no prose or explanations.
+CTAs in hero:
+- One PRIMARY CTA (e.g. Contact / WhatsApp / Get Help Now)
+  • Largest button on the page
+  • Warm accent color
+  • Rounded
+  • Clear hover/focus state
+- One SECONDARY CTA:
+  • Outlined or muted style
+  • Visible but less dominant
 
-Here is the sample HTML (truncated if needed):
+================================================
+CONTENT SECTIONS
+================================================
+- All sections should feel like “safe spaces”.
+- Use card-based layouts generously.
+- Cards:
+  • Rounded corners
+  • Soft shadow
+  • Plenty of padding
+- Avoid cluttered layouts.
+
+================================================
+TYPOGRAPHY & RTL
+================================================
+- Ensure Arabic text is COMFORTABLE to read:
+  • Increased line-height
+  • Slightly larger paragraph text
+- Support both LTR and RTL explicitly:
+  • Use body[dir="rtl"] overrides
+  • Do not mirror spacing incorrectly
+- Headings must feel reassuring, not loud.
+
+================================================
+BUTTONS & INTERACTION
+================================================
+- Buttons should feel touch-friendly:
+  • Large padding
+  • Smooth hover transitions
+- Primary buttons must stand out without feeling aggressive.
+
+================================================
+RESPONSIVENESS
+================================================
+- Mobile-first approach.
+- Generous spacing on mobile.
+- No cramped text.
+
+================================================
+IMPORTANT OUTPUT RULES
+================================================
+- OUTPUT ONLY RAW, VALID CSS
+- NO comments
+- NO explanations
+- NO HTML
+- NO markdown
+- NO JSON
+- Assume theme fonts
+- CSS is global and loaded on every page
+
+================================================
+INPUT HTML (REFERENCE STRUCTURE ONLY)
+================================================
 
 ${sampleHTML}
 `;
