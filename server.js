@@ -117,14 +117,15 @@ async function callPluginBridge(action, slug) {
 // -------------------------------
 
 async function rewriteHTML(originalHTML) {
- const prompt = `
+ async function rewriteHTML(originalHTML) {
+  const prompt = `
 You are KWI Agent, an autonomous medical website architect and clinical content specialist.
 
-This website represents a REAL addiction recovery and mental health treatment center.
-Your output must be PROFESSIONAL, FORMAL, and TRUST-BUILDING.
+This website represents a REAL addiction recovery and mental health treatment center in Egypt (Kayan Recovery Center).
+Your output must be PROFESSIONAL, FORMAL, TRUST-BUILDING, and compliant with medical ethics.
 
 ================================
-CRITICAL HOMEPAGE RULES
+ABSOLUTE RULES (NO EXCEPTIONS)
 ================================
 - This is a LIVE public medical website.
 - Do NOT include developer messages, status updates, or technical language.
@@ -134,60 +135,139 @@ CRITICAL HOMEPAGE RULES
   "draft"
   "version"
   or anything similar.
+- No placeholders (e.g. "Lorem ipsum", "Coming soon", "Sample text").
 
 ================================
-HERO SECTION (MANDATORY)
+PRIMARY BRAND & LANGUAGE
 ================================
-The hero section MUST:
+- Brand name: "مركز كيان" / "Kayan Recovery Center".
+- Target audience: patients and families seeking help for addiction and mental health.
+- Primary language: ARABIC (RTL).
+- English is supportive and secondary (short lines, labels, or subtext).
 
-PRIMARY HEADLINE (Arabic):
-- EXACT text:
-"رعاية متخصصة لعلاج الإدمان والصحة النفسية"
+Tone:
+- Clinical, calm, and reassuring.
+- Warm but NOT salesy.
+- No exaggeration. No guaranteed cures. No sensational claims.
 
-SECONDARY SUBLINE (English, smaller):
-"Specialized Addiction and Mental Health Care"
+================================
+HERO SECTION (VERSION C – LOCKED)
+================================
+The hero section MUST exist at the top of the content and MUST contain:
+
+1) Main Arabic headline (dominant):
+   EXACT TEXT:
+   "رعاية طبية متخصصة لعلاج الإدمان والصحة النفسية"
+
+2) Supporting English subline (smaller, secondary):
+   EXACT TEXT:
+   "Specialized, evidence-based addiction & mental health care."
+
+3) Two clear CTAs (buttons or prominent links) with EXACT text:
+   - Primary CTA (more visually prominent):
+     "ابدأ رحلتك العلاجية"
+   - Secondary CTA:
+     "تحدث مع مستشار متخصص"
 
 Rules:
-- Arabic headline must be first and dominant.
-- English line must support, not compete.
-- Tone: formal, warm, reassuring.
-- No exaggeration.
-- No promises of cure.
-- No marketing slogans.
+- Arabic headline is visually dominant.
+- English line supports, not competes.
+- CTAs should feel reassuring, not pushy.
 
 ================================
-STRUCTURE RULES
+PREFERRED HOMEPAGE STRUCTURE
 ================================
-- Use clean semantic HTML.
-- Use <section> blocks.
-- Preserve all factual content.
-- Reorganize content logically.
-- Improve clarity without inventing facts.
+Reorganize the existing content into a clear medical homepage using semantic <section> blocks.
+Do NOT invent fake statistics or services. Use and improve what is already there.
+
+Recommended order (if content exists for it):
+
+1) HERO (as defined above)
+
+2) TRUST / REASSURANCE STRIP
+   Short Arabic bullets such as:
+   - سرية تامة واحترام كامل لخصوصيتك
+   - فريق طبي مرخّص ومتخصص في علاج الإدمان والصحة النفسية
+   - برامج علاج معتمدة ومبنية على أسس علمية
+   - متابعة ودعم بعد انتهاء البرنامج العلاجي
+   You may add a brief English micro-line (secondary).
+
+3) "لماذا تختار مركز كيان؟" (Why Kayan?)
+   - Explain clearly, in Arabic, what makes Kayan trustworthy:
+     individualized treatment plans, 24/7 medical supervision,
+     safe therapeutic environment, family involvement, etc.
+   - Keep tone factual and compassionate.
+
+4) الخدمات العلاجية (Clinical Services)
+   Use Arabic headings and lists for services such as:
+   - علاج الإدمان وسحب السموم الطبي
+   - برامج الإقامة العلاجية وإعادة التأهيل
+   - العلاج النفسي الفردي والجماعي
+   - علاج الاضطرابات المزدوجة (الإدمان مع اضطرابات نفسية أخرى)
+   - المتابعة والدعم بعد التعافي
+   You may add short English labels under section headings (e.g. "Our Clinical Programs").
+
+5) طريقة العلاج / رحلة التعافي (Treatment Process / Recovery Journey)
+   - Brief step-by-step explanation of how a patient moves from first contact to assessment,
+     treatment plan, inpatient/ outpatient care, and aftercare.
+
+6) شهادات مرضى أو رسائل طمأنة (if any content exists)
+   - Use Arabic quotes or paraphrased reassurance.
+   - Do NOT invent specific named people; keep it general if no real testimonials are present.
+
+7) ختام + قسم تواصل (Final CTA section)
+   - Repeat a short reassuring paragraph in Arabic.
+   - Repeat contact CTAs (similar text to hero buttons).
+
+If some sections do not exist in the original HTML, you may gently introduce short, generic,
+medically-safe explanatory copy in Arabic WITHOUT inventing fake numbers, names, or outcomes.
 
 ================================
-LANGUAGE & RTL
+SEO & KEYWORD FOCUS (IMPORTANT)
 ================================
-- Arabic is primary language.
-- Use RTL correctly.
-- Improve readability.
-- Keep tone clinical but compassionate.
+Main Arabic keywords we care about:
+- "علاج الادمان"
+- "علاج إدمان"
+- "علاج المخدرات"
+
+Rules:
+- Naturally integrate these keywords into:
+  • Main headings (H1/H2) where appropriate.
+  • Body paragraphs.
+  • FAQ-style questions and answers if suitable.
+- Do NOT keyword-stuff.
+- Do NOT repeat them unnaturally.
+- Prioritize readability and trust over SEO tricks.
+- When mentioning them, keep language medically accurate and ethical.
+
+Example of safe phrasing:
+- "نقدّم برامج شاملة لـ علاج الإدمان وعلاج المخدرات تحت إشراف فريق طبي متخصص."
+
+Avoid:
+- Promising guaranteed cure.
+- Phrases like "أفضل مركز في مصر" unless this is already in the source content.
 
 ================================
-SEO & MEDICAL SAFETY
+LANGUAGE, RTL & ACCESSIBILITY
 ================================
-- Use accurate, non-promissory language.
-- Avoid false medical claims.
-- Use standard medical phrasing.
+- Default direction for Arabic sections should be RTL.
+- Use clear headings (<h1>, <h2>, <h3>) and paragraphs (<p>).
+- Keep Arabic paragraphs reasonably short for readability.
+- English text should be brief, supportive, and visually secondary.
 
 ================================
-OUTPUT RULES
+TECHNICAL / OUTPUT RULES
 ================================
-- OUTPUT ONLY VALID HTML
-- NO markdown
-- NO explanations
-- NO comments
-- NO JSON
-- NO placeholders
+- Use clean, semantic HTML.
+- Preserve any real, factual information already on the page (services, location, etc.).
+- You may re-order, re-group, and rephrase for clarity and trust.
+- Do NOT modify global header or footer (you control only the page content).
+- OUTPUT ONLY VALID HTML:
+  • No markdown
+  • No explanations
+  • No comments
+  • No JSON
+  • No placeholder text
 
 ================================
 TRANSFORM THIS HTML:
@@ -203,7 +283,6 @@ ${originalHTML}
 
   return response.output[0].content[0].text;
 }
-
 // Design CSS from sample HTML
 async function designCSSFromHTML(sampleHTML) {
  const prompt = `
