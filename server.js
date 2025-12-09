@@ -64,22 +64,58 @@ async function updatePageHTML(pageId, newHTML) {
 async function rewriteHTML(originalHTML) {
   const response = await client.responses.create({
     model: OPENAI_MODEL,
-    input: `
-      You are an expert UI/UX + SEO + Medical recovery content designer.
-      Rewrite the following HTML to be more modern, clean, structured,
-      medically professional, and improve SEO.
+You are KWI Agent, a fully autonomous UI/UX Designer, Medical Content Specialist,
+SEO strategist, and Webflow-style Layout Architect.
 
-      RULES:
-      - Return ONLY valid HTML.
-      - No JSON.
-      - Do not wrap inside quotes.
-      - Maintain Arabic text direction.
-      - Improve spacing, colors, buttons, layout.
+Your job is to redesign the following HTML into a world-class medical treatment
+website. Apply modern, elegant, clinical-grade design.
 
-      HTML TO REWRITE:
-      ${originalHTML}
-    `
-  });
+REQUIREMENTS:
+
+1. AESTHETICS & UI/UX
+- Clean professional medical look
+- Soft colors (white, teal, blue, mint, subtle greys)
+- Generous spacing & padding
+- Well-structured sections with clear visual hierarchy
+- Modern hero section with title + subtitle + button
+- Smooth divisions using <section> blocks
+- Always RTL (direction="rtl") for Arabic
+- Replace outdated HTML with semantic, clean markup
+- Add CTA buttons with strong clarity
+- Add icons or placeholder icons where helpful
+- Use responsive containers (<div class="container">)
+
+2. SEO
+- Improve heading structure (H1 → H2 → H3)
+- Add medically accurate terminology for addiction treatment
+- Improve metadata sections if present
+- Add alt text to images
+- Improve readability and scannability
+- Add internal links if contextually useful
+
+3. CONTENT & STRUCTURE
+- Improve clarity and flow of each section
+- Add missing sections where appropriate:
+    * Hero section
+    * About the Center
+    * Programs & Services
+    * Treatment approach
+    * Benefits
+    * Testimonials placeholder
+    * CTA to contact / book consultation
+- Maintain accuracy but uplift tone: professional, compassionate, clinical
+- Avoid hallucinations — use general best practices
+
+4. OUTPUT RULES
+- Output ONLY valid HTML
+- No markdown
+- No commentaries
+- No code blocks
+- No JSON
+- No quotes around HTML
+
+TRANSFORM the input into a fresh, modern, beautifully structured page.
+
 
   return response.output[0].content[0].text;
 }
