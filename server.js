@@ -33,12 +33,16 @@ const KAYAN_BRAND_CSS = `
 /* ---------------------------
 GLOBAL RESET / BRAND SYSTEM
 ----------------------------*/
+/* ---------------------------
+GLOBAL RESET / BRAND SYSTEM
+----------------------------*/
 body {
-  background: #ffffff !important;
+  background: #f2f4f6 !important; /* soft neutral background */
   direction: rtl;
   font-family: "Tahoma", "Arial", sans-serif;
-  color: #1d2d35;
+  color: #1f2d36;
   line-height: 1.8;
+  margin: 0;
 }
 
 *, *:before, *:after {
@@ -47,14 +51,31 @@ body {
 
 /* Kayan Brand Colors */
 :root {
-  --kayan-blue: #004e62;
-  --kayan-blue-light: #e7f2f4;
-  --kayan-text: #1d2d35;
+  --kayan-blue: #005066;        /* primary blue/teal */
+  --kayan-blue-soft: #f6f7f8;   /* soft panel background */
+  --kayan-text: #1f2d36;        /* dark blue-gray */
+  --kayan-border: #e2e7e9;
   --kayan-white: #ffffff;
 }
 
 /* ---------------------------
-HEADINGS
+GLOBAL LAYOUT
+----------------------------*/
+main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 16px 80px;
+}
+
+/* fallback if theme doesn't wrap in <main> */
+body > div:not(header):not(footer),
+body > section {
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+/* ---------------------------
+TYPOGRAPHY
 ----------------------------*/
 h1, h2, h3, h4 {
   color: var(--kayan-blue);
@@ -65,28 +86,96 @@ h1, h2, h3, h4 {
 p {
   margin-bottom: 16px;
   color: var(--kayan-text);
-  font-size: 1.1rem;
+  font-size: 1.08rem;
 }
 
 /* ---------------------------
-HERO LAYOUT
+HEADER / NAVIGATION
 ----------------------------*/
+.kwi-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  border-bottom: 1px solid var(--kayan-border);
+}
+
+.kwi-header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.kwi-header-logo {
+  margin-left: auto; /* RTL: logo on the right */
+  font-weight: 700;
+  color: var(--kayan-blue);
+  font-size: 1.1rem;
+}
+
+.kwi-header-nav {
+  display: flex;
+  gap: 20px;
+  font-size: 0.98rem;
+}
+
+.kwi-header-nav a {
+  color: var(--kayan-text);
+  text-decoration: none;
+}
+
+.kwi-header-nav a:hover {
+  color: var(--kayan-blue);
+}
+
+.kwi-header-cta {
+  margin-right: auto; /* RTL: CTA on left */
+}
+
+.kwi-header-cta a {
+  background: var(--kayan-blue);
+  color: #ffffff !important;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.kwi-header-cta a:hover {
+  background: #003e52;
+}
+
+/* ---------------------------
+HERO
+----------------------------*/
+section.hero,
 .hero {
-  background: var(--kayan-white) !important;
-  padding: 80px 20px;
-  text-align: center;
+  padding: 64px 16px 72px;
+  background: var(--kayan-blue-soft);
+}
+
+.hero-inner {
+  max-width: 840px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 32px 24px 36px;
+  border: 1px solid var(--kayan-border);
 }
 
 .hero h1 {
-  font-size: 2.4rem;
-  margin-bottom: 20px;
+  font-size: 2.2rem;
+  margin-bottom: 16px;
   color: var(--kayan-blue);
 }
 
 .hero .subline {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--kayan-text);
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 /* ---------------------------
@@ -95,51 +184,54 @@ BUTTONS
 .kwi-btn-primary {
   background: var(--kayan-blue);
   color: #ffffff !important;
-  padding: 14px 28px;
-  border-radius: 8px;
+  padding: 12px 28px;
+  border-radius: 999px;
   border: none;
-  font-size: 1.1rem;
+  font-size: 1rem;
   display: inline-block;
-  margin: 10px;
+  margin: 8px;
+  text-decoration: none;
 }
 
 .kwi-btn-primary:hover {
-  background: #003947;
+  background: #003e52;
 }
 
 .kwi-btn-secondary {
-  background: var(--kayan-white);
+  background: #ffffff;
   color: var(--kayan-blue) !important;
-  border: 2px solid var(--kayan-blue);
-  padding: 14px 28px;
-  border-radius: 8px;
-  font-size: 1.1rem;
+  border: 1px solid var(--kayan-blue);
+  padding: 12px 26px;
+  border-radius: 999px;
+  font-size: 1rem;
   display: inline-block;
-  margin: 10px;
+  margin: 8px;
+  text-decoration: none;
 }
 
 .kwi-btn-secondary:hover {
-  background: var(--kayan-blue-light);
+  background: var(--kayan-blue-soft);
 }
 
 /* ---------------------------
-SECTIONS
+SECTIONS & CARDS
 ----------------------------*/
 section {
-  padding: 60px 20px;
-  background: var(--kayan-white) !important;
+  padding: 56px 16px;
+  background: transparent;
 }
 
-section:nth-of-type(even) {
-  background: var(--kayan-blue-light) !important;
+.kwi-section-alt {
+  background: var(--kayan-blue-soft);
+  border-radius: 20px;
 }
 
 .kwi-card {
   background: #ffffff;
-  padding: 30px;
+  padding: 24px 20px;
   border-radius: 16px;
-  border: 1px solid #d8e4e6;
-  margin-bottom: 30px;
+  border: 1px solid var(--kayan-border);
+  margin-bottom: 24px;
 }
 
 /* ---------------------------
@@ -149,10 +241,10 @@ ul, ol {
   padding-right: 20px;
 }
 
-.hero * {
-  text-align: center !important;
+.text-center {
+  text-align: center;
 }
-`;
+
 
 // -------------------------------
 // WORDPRESS HELPERS
