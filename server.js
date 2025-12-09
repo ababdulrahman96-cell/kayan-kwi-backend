@@ -62,63 +62,76 @@ async function updatePageHTML(pageId, newHTML) {
 }
 
 async function rewriteHTML(originalHTML) {
-  const response = await client.responses.create({
-    model: OPENAI_MODEL,
+  const prompt = `
 You are KWI Agent, a fully autonomous UI/UX Designer, Medical Content Specialist,
 SEO strategist, and Webflow-style Layout Architect.
 
-Your job is to redesign the following HTML into a world-class medical treatment
-website. Apply modern, elegant, clinical-grade design.
+Your job is to REDESIGN the following HTML into a world-class medical treatment
+website. Apply modern, elegant, clinical-grade design following these rules:
 
-REQUIREMENTS:
-
+==============================
 1. AESTHETICS & UI/UX
-- Clean professional medical look
-- Soft colors (white, teal, blue, mint, subtle greys)
-- Generous spacing & padding
-- Well-structured sections with clear visual hierarchy
-- Modern hero section with title + subtitle + button
-- Smooth divisions using <section> blocks
-- Always RTL (direction="rtl") for Arabic
-- Replace outdated HTML with semantic, clean markup
-- Add CTA buttons with strong clarity
-- Add icons or placeholder icons where helpful
-- Use responsive containers (<div class="container">)
+==============================
+- Clean professional medical look.
+- Soft colors: white, teal, mint, blue, subtle greys.
+- Generous spacing and padding.
+- Well-structured sections with visual hierarchy.
+- Add a modern hero section with title, subtitle, CTA button.
+- Use <section> blocks for smooth layout.
+- Always RTL (direction="rtl") for Arabic.
+- Replace outdated HTML with clean semantic markup.
+- Add CTA buttons where appropriate.
+- Add icons or placeholder icons where useful.
+- Use responsive containers (<div class="container">).
 
-2. SEO
-- Improve heading structure (H1 → H2 → H3)
-- Add medically accurate terminology for addiction treatment
-- Improve metadata sections if present
-- Add alt text to images
-- Improve readability and scannability
-- Add internal links if contextually useful
+==============================
+2. SEO IMPROVEMENTS
+==============================
+- Correct heading structure (H1 → H2 → H3).
+- Add relevant addiction treatment keywords.
+- Add alt text to images.
+- Improve readability and flow.
+- Improve metadata if available.
+- Add internal links where useful.
 
+==============================
 3. CONTENT & STRUCTURE
-- Improve clarity and flow of each section
-- Add missing sections where appropriate:
-    * Hero section
-    * About the Center
-    * Programs & Services
-    * Treatment approach
-    * Benefits
-    * Testimonials placeholder
-    * CTA to contact / book consultation
-- Maintain accuracy but uplift tone: professional, compassionate, clinical
-- Avoid hallucinations — use general best practices
+==============================
+- Improve clarity and tone (professional, compassionate, medical).
+- Add missing sections if appropriate:
+    • Hero section
+    • About the Center
+    • Programs & Services
+    • Treatment Approach
+    • Benefits
+    • Testimonials placeholder
+    • Contact / CTA
+- Enhance layout but DO NOT hallucinate medical facts.
+- Use general, safe addiction-treatment concepts only.
 
+==============================
 4. OUTPUT RULES
-- Output ONLY valid HTML
-- No markdown
-- No commentaries
-- No code blocks
-- No JSON
-- No quotes around HTML
+==============================
+- Output ONLY valid HTML.
+- No markdown.
+- No explanation.
+- No code blocks.
+- No JSON.
+- No wrapping in quotes.
 
-TRANSFORM the input into a fresh, modern, beautifully structured page.
+TRANSFORM the following HTML into a fresh, modern, beautifully structured page:
 
+${originalHTML}
+`;
+
+  const response = await client.responses.create({
+    model: OPENAI_MODEL,
+    input: prompt
+  });
 
   return response.output[0].content[0].text;
 }
+
 
 // -------------------------------
 // AUTOPILOT LOOP
