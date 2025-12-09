@@ -201,106 +201,118 @@ ${originalHTML}
 // Design CSS from sample HTML
 async function designCSSFromHTML(sampleHTML) {
  const prompt = `
-You are a senior UI/UX designer and frontend engineer specializing in
-rehabilitation, mental health, and medical recovery websites.
+You are a senior UI/UX designer specializing in MEDICAL and REHABILITATION institutions.
+This website represents a REAL addiction recovery & mental health center.
 
-Your task:
-Generate a COMPLETE, modern CSS design system that transforms the site into
-a WARM, SUPPORTIVE, HOPE-ORIENTED rehabilitation center website.
-This is NOT a corporate hospital. This is a place of healing and recovery.
+================================
+BRAND AUTHORITY (NON-NEGOTIABLE)
+================================
+- The visual identity MUST be derived from the KAYAN logo.
+- Do NOT invent colors.
+- Do NOT use trendy palettes.
+- Do NOT use green or mint tones.
 
-================================================
-DESIGN TONE (VERY IMPORTANT)
-================================================
-- Emotional tone: warm, calm, supportive, reassuring.
-- The site must feel SAFE, HUMAN, and COMPASSIONATE.
-- Avoid harsh contrasts or aggressive marketing visuals.
-- Think: trust, care, recovery, dignity, professionalism.
+Primary brand color:
+- Deep medical blue / teal EXACTLY like the Kayan logo.
 
-================================================
-COLOR & VISUAL LANGUAGE
-================================================
-- Primary palette:
-  • Soft medical teal
-  • Muted blues
-  • Gentle mint accents
-  • Warm off-white backgrounds
-- Avoid black-heavy or cold corporate looks.
-- Use subtle gradients (very soft) where appropriate.
-- Borders, cards, and sections should feel light and breathable.
+Secondary colors:
+- White backgrounds (primary canvas)
+- Very light blue-gray for section separation
+- Dark blue-gray text (never pure black)
 
-================================================
-HERO SECTION (CRITICAL — MUST DOMINATE VISUALLY)
-================================================
-Force the FIRST major section / page intro / hero to:
-- Have noticeably larger vertical spacing.
-- Use larger heading sizes than the rest of the site.
-- Use a calming background (soft gradient or light solid).
-- Feel emotionally welcoming, not technical.
-- Center or right-align content depending on RTL.
+================================
+OVERALL VISUAL FEEL
+================================
+- Clean
+- Professional
+- Reassuring
+- Institutional but human
+- NOT corporate tech
+- NOT hospital-cold
+- NOT marketing-heavy
 
-CTAs in hero:
-- One PRIMARY CTA (e.g. Contact / WhatsApp / Get Help Now)
-  • Largest button on the page
-  • Warm accent color
+Think:
+“A place I would trust my family with.”
+
+================================
+HERO SECTION (HIGH PRIORITY)
+================================
+The first section MUST:
+- Be full-width
+- Sit on a CLEAN WHITE background
+- Use logo-blue for the main headline
+- Feel calm, authoritative, and welcoming
+- Have strong visual breathing room (space)
+
+Hero CTAs:
+- ONE primary CTA:
+  • Logo-blue background
+  • White text
   • Rounded
-  • Clear hover/focus state
-- One SECONDARY CTA:
-  • Outlined or muted style
-  • Visible but less dominant
+  • Larger than all other buttons
+- ONE secondary CTA:
+  • White background
+  • Logo-blue border
+  • Clearly secondary
 
-================================================
-CONTENT SECTIONS
-================================================
-- All sections should feel like “safe spaces”.
-- Use card-based layouts generously.
-- Cards:
+No gradients in hero.
+No gimmicks.
+
+================================
+SECTIONS & CARDS
+================================
+- Use white as the main background.
+- Separate sections using spacing, not colors.
+- Cards should:
+  • Be white
+  • Have subtle border OR shadow
   • Rounded corners
-  • Soft shadow
-  • Plenty of padding
-- Avoid cluttered layouts.
+  • Generous padding
 
-================================================
-TYPOGRAPHY & RTL
-================================================
-- Ensure Arabic text is COMFORTABLE to read:
+================================
+TYPOGRAPHY & RTL (VERY IMPORTANT)
+================================
+- Arabic readability is critical:
+  • Larger paragraph size
   • Increased line-height
-  • Slightly larger paragraph text
-- Support both LTR and RTL explicitly:
-  • Use body[dir="rtl"] overrides
-  • Do not mirror spacing incorrectly
-- Headings must feel reassuring, not loud.
+  • Comfortable spacing
+- Support RTL explicitly:
+  • body[dir="rtl"] overrides
+  • Right alignment without crowding
+- Headings should feel calm and confident, not loud.
 
-================================================
+================================
 BUTTONS & INTERACTION
-================================================
-- Buttons should feel touch-friendly:
-  • Large padding
-  • Smooth hover transitions
-- Primary buttons must stand out without feeling aggressive.
+================================
+- Buttons must feel:
+  • Calm
+  • Trustworthy
+  • Easy to tap
+- No aggressive colors.
+- Hover states should be subtle.
 
-================================================
+================================
 RESPONSIVENESS
-================================================
-- Mobile-first approach.
-- Generous spacing on mobile.
-- No cramped text.
+================================
+- Mobile-first.
+- Plenty of white space.
+- No compressed text.
 
-================================================
-IMPORTANT OUTPUT RULES
-================================================
-- OUTPUT ONLY RAW, VALID CSS
+================================
+OUTPUT RULES (STRICT)
+================================
+- OUTPUT ONLY VALID RAW CSS
 - NO comments
 - NO explanations
 - NO HTML
 - NO markdown
 - NO JSON
 - Assume theme fonts
-- CSS is global and loaded on every page
+- CSS is global
 
-================================================
-INPUT HTML (REFERENCE STRUCTURE ONLY)
-================================================
+================================
+REFERENCE HTML (STRUCTURE ONLY)
+================================
 
 ${sampleHTML}
 `;
